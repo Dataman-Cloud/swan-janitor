@@ -1,0 +1,16 @@
+{
+  "ID": "mesos-1-1-1",
+  "Name": "mesos-foo-1-1",
+  "Address": "192.168.1.174",
+  "Port": 51000,
+  "Check": {
+    "Node": "foobar",
+    "CheckID": "service:mesos-foo-1-1",
+    "Name": "mesos health check 51000",
+    "Notes": "Script based health check",
+    "Status": "passing",
+    "ServiceID": "mesos-1-1-1",
+    "HTTP": "http://192.168.1.174:12311",
+    "DeregisterCriticalServiceAfter": "2m"
+  }
+}
