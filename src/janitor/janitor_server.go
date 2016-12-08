@@ -2,6 +2,7 @@ package janitor
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Dataman-Cloud/janitor/src/config"
 	"github.com/Dataman-Cloud/janitor/src/handler"
@@ -91,40 +92,50 @@ func (server *JanitorServer) setupServiceManager() error {
 }
 
 func (server *JanitorServer) Run() {
-	for {
-		<-server.upstreamLoader.ChangeNotify()
-		fmt.Printf("upstream num:%s\n", len(server.upstreamLoader.List()))
-		for _, u := range server.upstreamLoader.List() {
-			switch u.State.State() {
-			case upstream.STATE_NEW:
-				log.Infof("create new service pod: %s", u.Key())
-				pod, err := server.serviceManager.ForkOrFetchNewServicePod(u)
-				if err != nil {
-					log.Infof("fail to create a service pod: %s", err.Error())
-					continue
-				}
-				pod.Run()
+	switch strings.ToLower(server.config.Upstream.SourceType) {
+	case "consul":
+		for {
+			<-server.upstreamLoader.ChangeNotify()
+			fmt.Printf("upstream num:%s\n", len(server.upstreamLoader.List()))
+			for _, u := range server.upstreamLoader.List() {
+				switch u.State.State() {
+				case upstream.STATE_NEW:
+					log.Infof("create new service pod: %s", u.Key())
+					pod, err := server.serviceManager.ForkOrFetchNewServicePod(u)
+					if err != nil {
+						log.Infof("fail to create a service pod: %s", err.Error())
+						continue
+					}
+					pod.Run()
 
-			case upstream.STATE_CHANGED:
-				log.Infof("update existing service pod: %s", u.Key())
-				log.Infof("current upstream has %d targets", len(u.Targets))
-				pod, err := server.serviceManager.ForkOrFetchNewServicePod(u)
-				if err != nil {
-					log.Errorf("failed to found pod %s", u.Key().ToString())
-				} else {
-					pod.Invalid()
+				case upstream.STATE_CHANGED:
+					log.Infof("update existing service pod: %s", u.Key())
+					log.Infof("current upstream has %d targets", len(u.Targets))
+					pod, err := server.serviceManager.ForkOrFetchNewServicePod(u)
+					if err != nil {
+						log.Errorf("failed to found pod %s", u.Key().ToString())
+					} else {
+						pod.Invalid()
+					}
 				}
+
+				u.SetState(upstream.STATE_LISTENING)
 			}
 
-			u.SetState(upstream.STATE_LISTENING)
-		}
-
-		for _, u := range server.upstreamLoader.List() {
-			if u.StaleMark {
-				log.Infof("remove unused service pod: %s", u.Key())
-				server.serviceManager.KillServicePod(u)
+			for _, u := range server.upstreamLoader.List() {
+				if u.StaleMark {
+					log.Infof("remove unused service pod: %s", u.Key())
+					server.serviceManager.KillServicePod(u)
+				}
 			}
 		}
+	case "swan":
+		log.Infof("create a default service pod:%s", server.listenerManager.DefaultUpstreamKey())
+		pod, err := server.serviceManager.FetchDefaultServicePod()
+		if err != nil {
+			log.Infof("fail to create default service pod:%s", err.Error())
+		}
+		pod.Run()
 	}
 }
 
