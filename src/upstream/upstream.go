@@ -97,6 +97,16 @@ func (u *Upstream) Equal(u1 *Upstream) bool {
 	return fieldsEqual && targetsSizeEqual && targetsEqual
 }
 
+func (u *Upstream) GetTarget(serviceID string) *Target {
+	for _, t := range u.Targets {
+		if t.ServiceID == serviceID {
+			return t
+			break
+		}
+	}
+	return nil
+}
+
 func (u *Upstream) FieldsEqualButTargetsDiffer(u1 *Upstream) bool {
 	fieldsEqual := u.ServiceName == u1.ServiceName &&
 		u.FrontendPort == u1.FrontendPort &&

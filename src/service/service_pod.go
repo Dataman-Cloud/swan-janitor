@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Dataman-Cloud/janitor/src/upstream"
-	"github.com/Dataman-Cloud/janitor/vendor/github.com/armon/go-proxyproto"
+	"github.com/armon/go-proxyproto"
 
 	log "github.com/Sirupsen/logrus"
 	consulApi "github.com/hashicorp/consul/api"
@@ -51,6 +51,14 @@ func NewServicePod(u *upstream.Upstream, manager *ServiceManager) (*ServicePod, 
 		pod.LogActivity(fmt.Sprintf("[INFO] preparing serving application %s at %s", u.ServiceName, u.Key().ToString()))
 	}
 
+	return pod, nil
+}
+
+func NewSingleServicePod(manager *ServiceManager) (*ServicePod, error) {
+	pod := &ServicePod{
+		stopCh:  make(chan bool, 1),
+		Manager: manager,
+	}
 	return pod, nil
 }
 

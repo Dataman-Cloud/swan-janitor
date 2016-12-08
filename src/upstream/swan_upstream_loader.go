@@ -97,6 +97,7 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 			for _, u := range swanUpstreamLoader.Upstreams {
 				if u.FieldsEqual(upstream) {
 					u.Remove(target)
+					fmt.Printf("delete target from upstream:%+v\n", target)
 					if len(u.Targets) > 0 {
 						u.SetState(STATE_CHANGED)
 					} else {
@@ -130,6 +131,12 @@ func (swanUpstreamLoader *SwanUpstreamLoader) ServiceEntries() []string {
 }
 
 func (swanUpstreamLoader *SwanUpstreamLoader) Get(serviceName string) *Upstream {
+	for _, u := range swanUpstreamLoader.Upstreams {
+		if u.ServiceName == serviceName {
+			return u
+			break
+		}
+	}
 	return nil
 }
 

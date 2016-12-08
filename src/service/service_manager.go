@@ -49,10 +49,31 @@ func NewServiceManager(ctx context.Context) *ServiceManager {
 		serviceManager.upstreamLoader = ctx.Value(upstream.SWAN_UPSTREAM_LOADER_KEY).(*upstream.SwanUpstreamLoader)
 	}
 
+	serviceManager.handlerFactory.UpstreamLoader = serviceManager.upstreamLoader
+
 	serviceManager.servicePods = make(map[upstream.UpstreamKey]*ServicePod)
 	serviceManager.ctx = ctx
 
 	return serviceManager
+}
+
+func (manager *ServiceManager) FetchDefaultServicePod() (*ServicePod, error) {
+	manager.forkMutex.Lock()
+	defer manager.forkMutex.Unlock()
+	pod, err := NewSingleServicePod(manager)
+	if err != nil {
+		fmt.Println("fails to setup default service pod")
+		return nil, err
+	}
+	// fetch default listener then assign it to pod
+	pod.Listener = manager.listenerManager.DefaultListener()
+
+	// fetch a http handler then assign it to pod
+	var u *upstream.Upstream
+	pod.HttpServer = &http.Server{Handler: manager.handlerFactory.HttpHandler(u)}
+
+	manager.servicePods[manager.listenerManager.DefaultUpstreamKey()] = pod
+	return pod, nil
 }
 
 func (manager *ServiceManager) ForkOrFetchNewServicePod(us *upstream.Upstream) (*ServicePod, error) {
