@@ -1,6 +1,8 @@
 package janitor
 
 import (
+	"fmt"
+
 	"github.com/Dataman-Cloud/janitor/src/config"
 	"github.com/Dataman-Cloud/janitor/src/handler"
 	"github.com/Dataman-Cloud/janitor/src/listener"
@@ -91,6 +93,7 @@ func (server *JanitorServer) setupServiceManager() error {
 func (server *JanitorServer) Run() {
 	for {
 		<-server.upstreamLoader.ChangeNotify()
+		fmt.Printf("upstream num:%s\n", len(server.upstreamLoader.List()))
 		for _, u := range server.upstreamLoader.List() {
 			switch u.State.State() {
 			case upstream.STATE_NEW:

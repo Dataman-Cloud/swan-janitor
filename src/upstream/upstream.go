@@ -168,3 +168,16 @@ func (u *Upstream) StateIs(expectState UpstreamStateEnum) bool {
 func (u *Upstream) Key() UpstreamKey {
 	return UpstreamKey{Proto: u.FrontendProto, Ip: u.FrontendIp, Port: u.FrontendPort}
 }
+
+func (u *Upstream) Remove(target *Target) {
+	index := -1
+	for k, v := range u.Targets {
+		if v.Equal(target) {
+			index = k
+			break
+		}
+	}
+	if index >= 0 {
+		u.Targets = append(u.Targets[:index], u.Targets[index+1:]...)
+	}
+}

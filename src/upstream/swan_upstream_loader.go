@@ -46,7 +46,7 @@ func InitSwanUpstreamLoader(defaultUpstreamIp net.IP, defaultPort string) (*Swan
 func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error("SwanUpstreamLoader poll got error: %s", err)
+			log.Errorf("SwanUpstreamLoader poll got error: %s", err)
 			swanUpstreamLoader.Poll() // execute poll again
 		}
 	}()
@@ -58,13 +58,54 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 		log.Debug("upstreamLoader receive one app event:%s", appEvent)
 		switch strings.ToLower(appEvent.Operation) {
 		case "add":
-			newUpstream := buildSwanUpstream(appEvent, swanUpstreamLoader.DefaultUpstreamIp, swanUpstreamLoader.Port, swanUpstreamLoader.Proto)
-			fmt.Printf("upstreamKey:%s\n", newUpstream.Key())
-			//for _, upstream := range swanUpstreamLoader.Upstreams {
-			//}
-		case "delete":
-		}
+			upstream := buildSwanUpstream(appEvent, swanUpstreamLoader.DefaultUpstreamIp, swanUpstreamLoader.Port, swanUpstreamLoader.Proto)
+			target := buildSwanTarget(appEvent)
+			upstreamDuplicated := false
+			for _, u := range swanUpstreamLoader.Upstreams {
+				if u.FieldsEqual(upstream) {
+					upstreamDuplicated = true
+					targetDuplicated := false
+					for _, t := range u.Targets {
+						if t.Equal(target) {
+							targetDuplicated = true
+							break
+						} else if t.ServiceID == target.ServiceID {
+							target.Upstream = u
+							u.Remove(t)
+							u.Targets = append(u.Targets, target)
+							u.SetState(STATE_CHANGED)
+							break
+						}
+					}
+					if !targetDuplicated {
+						target.Upstream = u
+						u.Targets = append(u.Targets, target)
+						u.SetState(STATE_CHANGED)
+					}
 
+				}
+			}
+			if !upstreamDuplicated {
+				target.Upstream = upstream
+				upstream.SetState(STATE_NEW)
+				upstream.Targets = append(upstream.Targets, target)
+				swanUpstreamLoader.Upstreams = append(swanUpstreamLoader.Upstreams, upstream)
+			}
+		case "delete":
+			upstream := buildSwanUpstream(appEvent, swanUpstreamLoader.DefaultUpstreamIp, swanUpstreamLoader.Port, swanUpstreamLoader.Proto)
+			target := buildSwanTarget(appEvent)
+			for _, u := range swanUpstreamLoader.Upstreams {
+				if u.FieldsEqual(upstream) {
+					u.Remove(target)
+					if len(u.Targets) > 0 {
+						u.SetState(STATE_CHANGED)
+					} else {
+						u.StaleMark = true
+					}
+				}
+			}
+		}
+		swanUpstreamLoader.changeNotify <- true
 	}
 }
 
@@ -110,32 +151,35 @@ func (swanUpstreamLoader *SwanUpstreamLoader) ChangeNotify() <-chan bool {
 	return swanUpstreamLoader.changeNotify
 }
 
-func buildSwanUpstream(appEvent *AppEventNotify, defaultUpstreamIp net.IP, port string, proto string) Upstream {
-	// create a new upstream
-	var upstream Upstream
+func buildSwanTarget(appEvent *AppEventNotify) *Target {
+	// create a new target
+	var target Target
 	taskNamespaces := strings.Split(appEvent.TaskName, ".")
 	taskNum := taskNamespaces[0]
 	appName := strings.Join(taskNamespaces[1:], ".")
-	upstream.ServiceName = appName
-	upstream.FrontendIp = defaultUpstreamIp.String()
-	upstream.FrontendPort = port
-	upstream.FrontendProto = proto
-	fmt.Printf("taskNum:%s\n", taskNum)
-	fmt.Printf("appName:%s\n", appName)
-	upstream.Targets = make([]*Target, 0)
-	upstream.StaleMark = false
-	upstream.SetState(STATE_NEW)
-
-	// create a new target
-	var target Target
 	target.Address = appEvent.AgentHostName
 	target.ServiceName = appName
 	target.ServiceID = taskNum
 	target.ServiceAddress = appEvent.AgentHostName
 	target.ServicePort = appEvent.AgentPort
-	target.Upstream = &upstream
+	return &target
+}
 
-	// add target in upstream
-	upstream.Targets = append(upstream.Targets, &target)
-	return upstream
+func buildSwanUpstream(appEvent *AppEventNotify, defaultUpstreamIp net.IP, port string, proto string) *Upstream {
+	// create a new upstream
+	var upstream Upstream
+	taskNamespaces := strings.Split(appEvent.TaskName, ".")
+	fmt.Printf("taskNamespaces:%s\n", taskNamespaces)
+	taskNum := taskNamespaces[0]
+	fmt.Printf("taskNamespaces[1:]:%s\n", taskNamespaces[1:])
+	appName := strings.Join(taskNamespaces[1:], ".")
+	upstream.ServiceName = appName
+	upstream.FrontendIp = defaultUpstreamIp.String()
+	upstream.FrontendPort = port
+	upstream.FrontendProto = proto
+	upstream.Targets = make([]*Target, 0)
+	upstream.StaleMark = false
+	fmt.Printf("taskNum:%s\n", taskNum)
+	fmt.Printf("appName:%s\n", appName)
+	return &upstream
 }
