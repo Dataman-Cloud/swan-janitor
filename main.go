@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -49,10 +48,12 @@ func RegisterSignalHandler() {
 	}()
 }
 
+//This is for swan
 func main() {
 	janitorConfig := LoadConfig()
 	janitorConfig.Listener.Mode = config.SINGLE_LISTENER_MODE
-	janitorConfig.Listener.DefaultPort = "8080"
+	janitorConfig.Listener.DefaultPort = "9998"
+	janitorConfig.HttpHandler.Domain = "dataman-inc.com"
 	janitorUpstream := config.Upstream{
 		SourceType: "swan",
 	}
@@ -73,13 +74,48 @@ func main() {
 	ticker := time.NewTicker(time.Second * 30)
 	for {
 		<-ticker.C
-		fmt.Println("start send appEvent")
-		appEvent := &upstream.AppEventNotify{
-			Operation:     "add",
-			TaskName:      "0.nginx0051-01.defaultGroup.dataman-mesos",
-			AgentHostName: "192.168.1.162",
-			AgentPort:     "80",
+		log.Debug("sending targetChangeEvent")
+		targetChangeEvents := []*upstream.TargetChangeEvent{
+			{
+				Change:     "add",
+				TargetName: "0.nginx0051-01.defaultGroup.dataman-mesos",
+				TargetIP:   "192.168.1.162",
+				TargetPort: "80",
+			},
+			{
+				Change:     "add",
+				TargetName: "1.nginx0051-01.defaultGroup.dataman-mesos",
+				TargetIP:   "192.168.1.163",
+				TargetPort: "80",
+			},
+			//{
+			//	Change:     "delete",
+			//	TargetName:      "0.nginx0051-01.defaultGroup.dataman-mesos",
+			//	TargetIP: "192.168.1.162",
+			//	TargetPort:     "80",
+			//},
 		}
-		server.UpstreamLoader().(*upstream.SwanUpstreamLoader).SwanEventChan() <- appEvent
+		for _, targetChangeEvent := range targetChangeEvents {
+			server.SwanEventChan() <- targetChangeEvent
+		}
 	}
 }
+
+/*
+This is for borg
+func main() {
+	config := LoadConfig()
+
+	TuneGolangProcess()
+	SetupLogger()
+
+	server := janitor.NewJanitorServer(config)
+	server.Init().Run()
+	cleanFuncs = append(cleanFuncs, func() {
+		server.Shutdown()
+	})
+
+	//<-stopWait
+	//register signal handler
+}
+*/
