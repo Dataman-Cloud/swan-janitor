@@ -16,14 +16,13 @@ func DefaultConfig() Config {
 
 	config := Config{
 		Listener: Listener{
-			Mode:         MULTIPORT_LISTENER_MODE,
+			Mode:         SINGLE_LISTENER_MODE,
 			IP:           ip,
 			DefaultPort:  "3456",
 			DefaultProto: "http",
 		},
 		Upstream: Upstream{
-			SourceType:   "consul",
-			ConsulAddr:   "localhost:8500",
+			SourceType:   "swan",
 			PollInterval: time.Second * 30,
 		},
 		HttpHandler: HttpHandler{
@@ -78,8 +77,7 @@ type CertSource struct {
 }
 
 type Upstream struct {
-	SourceType   string // one of consul, file or somthing else
-	ConsulAddr   string
+	SourceType   string
 	PollInterval time.Duration
 }
 

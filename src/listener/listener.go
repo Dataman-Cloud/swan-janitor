@@ -6,7 +6,7 @@ import (
 	"net/http"
 	//"time"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
 
 	"github.com/armon/go-proxyproto"
 )

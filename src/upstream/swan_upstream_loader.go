@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Dataman-Cloud/janitor/src/loadbalance"
+	"github.com/Dataman-Cloud/swan-janitor/src/loadbalance"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -16,10 +16,11 @@ const (
 )
 
 type TargetChangeEvent struct {
-	Change     string
-	TargetName string
-	TargetIP   string
-	TargetPort string
+	Change       string
+	TargetName   string
+	TargetIP     string
+	TargetPort   string
+	FrontendPort string
 }
 
 type SwanUpstreamLoader struct {
@@ -55,7 +56,6 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 	}()
 
 	for {
-		//var targetChangeEvent *TargetChangeEvent
 		targetChangeEvent := <-swanUpstreamLoader.swanEventChan
 		log.Debugf("SwanUpstreamLoader receive one app event:%s", targetChangeEvent)
 		switch strings.ToLower(targetChangeEvent.Change) {
@@ -76,7 +76,6 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 							u.Remove(t)
 							u.Targets = append(u.Targets, target)
 							log.Debugf("Target [%s] updated in upstream [%s]", target.ServiceID, u.ServiceName)
-							u.SetState(STATE_CHANGED)
 							break
 						}
 					}
@@ -84,7 +83,6 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 						target.Upstream = u
 						u.Targets = append(u.Targets, target)
 						log.Debugf("Target [%s] added in upstream [%s]", target.ServiceID, u.ServiceName)
-						u.SetState(STATE_CHANGED)
 					}
 
 				}
@@ -110,14 +108,13 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 				if u.FieldsEqual(upstream) {
 					u.Remove(target)
 					log.Debugf("Target %s removed from upstream [%s]", target.ServiceID, upstream.ServiceName)
-					if len(u.Targets) > 0 {
-						u.SetState(STATE_CHANGED)
-					} else {
+					if len(u.Targets) == 0 {
 						u.StaleMark = true
 					}
 				}
 			}
 		}
+		swanUpstreamLoader.changeNotify <- true
 	}
 }
 
@@ -183,15 +180,18 @@ func buildSwanTarget(targetChangeEvent *TargetChangeEvent) *Target {
 	return &target
 }
 
-func buildSwanUpstream(targetChangeEvent *TargetChangeEvent, defaultUpstreamIp net.IP, port string, proto string) *Upstream {
+func buildSwanUpstream(targetChangeEvent *TargetChangeEvent, defaultUpstreamIp net.IP, defaultPort string, defaultProto string) *Upstream {
 	// create a new upstream
 	var upstream Upstream
 	taskNamespaces := strings.Split(targetChangeEvent.TargetName, ".")
 	appName := strings.Join(taskNamespaces[1:], ".")
 	upstream.ServiceName = appName
+	upstream.FrontendProto = defaultProto
 	upstream.FrontendIp = defaultUpstreamIp.String()
-	upstream.FrontendPort = port
-	upstream.FrontendProto = proto
+	upstream.FrontendPort = defaultPort
+	if targetChangeEvent.FrontendPort != "" {
+		upstream.FrontendPort = targetChangeEvent.FrontendPort
+	}
 	upstream.Targets = make([]*Target, 0)
 	upstream.StaleMark = false
 	return &upstream

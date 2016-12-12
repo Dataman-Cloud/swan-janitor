@@ -1,14 +1,13 @@
 package janitor
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
-	"github.com/Dataman-Cloud/janitor/src/handler"
-	"github.com/Dataman-Cloud/janitor/src/listener"
-	"github.com/Dataman-Cloud/janitor/src/service"
-	"github.com/Dataman-Cloud/janitor/src/upstream"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/handler"
+	"github.com/Dataman-Cloud/swan-janitor/src/listener"
+	"github.com/Dataman-Cloud/swan-janitor/src/service"
+	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
 
 	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -97,11 +96,10 @@ func (server *JanitorServer) setupServiceManager() error {
 }
 
 func (server *JanitorServer) Run() {
-	switch strings.ToLower(server.config.Upstream.SourceType) {
-	case "consul":
+	switch strings.ToLower(server.config.Listener.Mode) {
+	case config.MULTIPORT_LISTENER_MODE:
 		for {
 			<-server.upstreamLoader.ChangeNotify()
-			fmt.Printf("upstream num:%s\n", len(server.upstreamLoader.List()))
 			for _, u := range server.upstreamLoader.List() {
 				switch u.State.State() {
 				case upstream.STATE_NEW:
@@ -113,28 +111,18 @@ func (server *JanitorServer) Run() {
 					}
 					pod.Run()
 
-				case upstream.STATE_CHANGED:
-					log.Infof("update existing service pod: %s", u.Key())
-					log.Infof("current upstream has %d targets", len(u.Targets))
-					pod, err := server.serviceManager.ForkOrFetchNewServicePod(u)
-					if err != nil {
-						log.Errorf("failed to found pod %s", u.Key().ToString())
-					} else {
-						pod.Invalid()
-					}
+					u.SetState(upstream.STATE_LISTENING)
 				}
 
-				u.SetState(upstream.STATE_LISTENING)
-			}
-
-			for _, u := range server.upstreamLoader.List() {
-				if u.StaleMark {
-					log.Infof("remove unused service pod: %s", u.Key())
-					server.serviceManager.KillServicePod(u)
+				for _, u := range server.upstreamLoader.List() {
+					if u.StaleMark {
+						log.Infof("remove unused service pod: %s", u.Key())
+						server.serviceManager.KillServicePod(u)
+					}
 				}
 			}
 		}
-	case "swan":
+	case config.SINGLE_LISTENER_MODE:
 		log.Infof("create a default service pod:%s", server.listenerManager.DefaultUpstreamKey())
 		pod, err := server.serviceManager.FetchDefaultServicePod()
 		if err != nil {
@@ -148,12 +136,4 @@ func (server *JanitorServer) Shutdown() {}
 
 func (server *JanitorServer) PortsOccupied() []string {
 	return server.serviceManager.PortsOccupied()
-}
-
-func (server *JanitorServer) ClusterAddressList(prefix string) ([]string, error) {
-	return server.serviceManager.ClusterAddressList(prefix)
-}
-
-func (server *JanitorServer) ServiceActvities(serviceName string) ([]string, error) {
-	return server.serviceManager.ServiceActvities(serviceName)
 }

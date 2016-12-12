@@ -1,11 +1,10 @@
 package janitor
 
 import (
-	"github.com/Dataman-Cloud/janitor/src/config"
-	"github.com/Dataman-Cloud/janitor/src/handler"
-	"github.com/Dataman-Cloud/janitor/src/listener"
-	//"github.com/Dataman-Cloud/janitor/src/service"
-	"github.com/Dataman-Cloud/janitor/src/upstream"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/handler"
+	"github.com/Dataman-Cloud/swan-janitor/src/listener"
+	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
 
 	"testing"
 

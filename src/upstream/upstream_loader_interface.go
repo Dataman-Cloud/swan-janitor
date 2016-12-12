@@ -3,7 +3,7 @@ package upstream
 import (
 	"strings"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
 
 	"golang.org/x/net/context"
 )
@@ -22,12 +22,6 @@ func InitAndStartUpstreamLoader(ctx context.Context, Config config.Config) (Upst
 	var upstreamLoader UpstreamLoader
 	var err error
 	switch strings.ToLower(Config.Upstream.SourceType) {
-	case "consul":
-		UpstreamLoaderKey = CONSUL_UPSTREAM_LOADER_KEY
-		upstreamLoader, err = InitConsulUpstreamLoader(Config.Upstream.ConsulAddr, Config.Listener.IP, Config.Upstream.PollInterval)
-		if err != nil {
-			return nil, err
-		}
 	case "swan":
 		UpstreamLoaderKey = SWAN_UPSTREAM_LOADER_KEY
 		upstreamLoader, err = InitSwanUpstreamLoader(Config.Listener.IP, Config.Listener.DefaultPort, Config.Listener.DefaultProto)
