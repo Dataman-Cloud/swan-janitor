@@ -30,7 +30,7 @@ func LoadConfig() config.Config {
 func main() {
 	janitorConfig := LoadConfig()
 	//enable multi_port mode
-	janitorConfig.Listener.Mode = config.MULTIPORT_LISTENER_MODE
+	//janitorConfig.Listener.Mode = config.MULTIPORT_LISTENER_MODE
 
 	//TuneGolangProcess()
 	SetupLogger()
@@ -44,18 +44,18 @@ func main() {
 		log.Debug("sending targetChangeEvent")
 		targetChangeEvents := []*upstream.TargetChangeEvent{
 			{
-				Change:       "add",
-				TargetName:   "0.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:     "192.168.1.162",
-				TargetPort:   "80",
-				FrontendPort: "8081", //for MULTIPORT_LISTENER_MODE
+				Change:     "add",
+				TargetName: "0.nginx0051-01.defaultGroup.dataman-mesos",
+				TargetIP:   "192.168.1.162",
+				TargetPort: "80",
+				//FrontendPort: "8081", //for MULTIPORT_LISTENER_MODE
 			},
 			{
-				Change:       "add",
-				TargetName:   "1.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:     "192.168.1.163",
-				TargetPort:   "80",
-				FrontendPort: "8081", // for MULTIPORT_LISTENER_MODE
+				Change:     "add",
+				TargetName: "1.nginx0051-01.defaultGroup.dataman-mesos",
+				TargetIP:   "192.168.1.163",
+				TargetPort: "80",
+				//FrontendPort: "8081", // for MULTIPORT_LISTENER_MODE
 			},
 		}
 
@@ -65,18 +65,18 @@ func main() {
 		time.Sleep(time.Second * 10)
 		targetChangeEvents = []*upstream.TargetChangeEvent{
 			{
-				Change:       "delete",
-				TargetName:   "0.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:     "192.168.1.162",
-				TargetPort:   "80",
-				FrontendPort: "8081",
+				Change:     "delete",
+				TargetName: "0.nginx0051-01.defaultGroup.dataman-mesos",
+				TargetIP:   "192.168.1.162",
+				TargetPort: "80",
+				//FrontendPort: "8081",
 			},
 			{
-				Change:       "delete",
-				TargetName:   "1.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:     "192.168.1.163",
-				TargetPort:   "80",
-				FrontendPort: "8081",
+				Change:     "delete",
+				TargetName: "1.nginx0051-01.defaultGroup.dataman-mesos",
+				TargetIP:   "192.168.1.163",
+				TargetPort: "80",
+				//FrontendPort: "8081",
 			},
 		}
 		for _, targetChangeEvent := range targetChangeEvents {

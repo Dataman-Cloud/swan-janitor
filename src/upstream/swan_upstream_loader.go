@@ -110,6 +110,8 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 					log.Debugf("Target %s removed from upstream [%s]", target.ServiceID, upstream.ServiceName)
 					if len(u.Targets) == 0 {
 						u.StaleMark = true
+						swanUpstreamLoader.Remove(u)
+						log.Debugf("Upstream [%s] removed", u.ServiceName)
 					}
 				}
 			}
