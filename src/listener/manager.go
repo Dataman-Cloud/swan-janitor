@@ -3,8 +3,8 @@ package listener
 import (
 	"net"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
-	"github.com/Dataman-Cloud/janitor/src/upstream"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
 	"github.com/armon/go-proxyproto"
 
 	log "github.com/Sirupsen/logrus"

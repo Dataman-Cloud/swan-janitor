@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
-	"github.com/Dataman-Cloud/janitor/src/upstream"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
 )
 
 const HANDLER_FACTORY_KEY = "handler_factory"

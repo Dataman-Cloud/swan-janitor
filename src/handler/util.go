@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
 )
 
 // addHeaders adds/updates headers in request

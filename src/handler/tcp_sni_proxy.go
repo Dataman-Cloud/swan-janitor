@@ -6,8 +6,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
-	"github.com/Dataman-Cloud/janitor/src/upstream"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
 )
 
 // TCPProxy implements an SNI aware transparent TCP proxy which captures the

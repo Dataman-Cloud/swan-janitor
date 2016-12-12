@@ -6,13 +6,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Dataman-Cloud/janitor/src/loadbalance"
+	"github.com/Dataman-Cloud/swan-janitor/src/loadbalance"
 
 	log "github.com/Sirupsen/logrus"
 )
 
 type Upstream struct {
-	State     *UpstreamState // new|listening|outdated|changed
+	State     *UpstreamState // new|listening|outdated
 	StaleMark bool           // mark if the current upstream not inuse anymore
 
 	ServiceName   string `json:"ServiceName"`

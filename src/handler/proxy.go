@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dataman-Cloud/janitor/src/config"
-	"github.com/Dataman-Cloud/janitor/src/upstream"
+	"github.com/Dataman-Cloud/swan-janitor/src/config"
+	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -20,27 +20,25 @@ type httpProxy struct {
 	cfg            config.HttpHandler
 	listenerConfig config.Listener
 	upstreamLoader upstream.UpstreamLoader
-	targetEntry    *url.URL
+	upstream       *upstream.Upstream
 }
 
-func NewHTTPProxy(tr http.RoundTripper, cfg config.HttpHandler, configListener config.Listener, upstream *upstream.Upstream, upstreamLoader upstream.UpstreamLoader) http.Handler {
-	var targetEntry *url.URL
-	// in MULTI_LISTENER_MODE
-	if upstream != nil {
-		targetEntry = upstream.NextTargetEntry()
-	}
-
+func NewHTTPProxy(tr http.RoundTripper, cfg config.HttpHandler, configListener config.Listener, us *upstream.Upstream, upstreamLoader upstream.UpstreamLoader) http.Handler {
 	return &httpProxy{
 		tr:             tr,
 		listenerConfig: configListener,
 		cfg:            cfg,
 		upstreamLoader: upstreamLoader,
-		targetEntry:    targetEntry,
+		upstream:       us,
 	}
 }
 
 func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if p.listenerConfig.Mode == config.SINGLE_LISTENER_MODE {
+	var targetEntry *url.URL
+	switch p.listenerConfig.Mode {
+	case config.MULTIPORT_LISTENER_MODE:
+		targetEntry = p.upstream.NextTargetEntry()
+	case config.SINGLE_LISTENER_MODE:
 		hostname := r.Header.Get("Host")
 		hostname = "http://nginx0051-01.defaultGroup.dataman-mesos.dataman-inc.com:80"
 		if hostname == "" {
@@ -69,7 +67,7 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if upstream != nil {
 				target := upstream.GetTarget(serviceID)
 				if target != nil {
-					p.targetEntry = target.Entry()
+					targetEntry = target.Entry()
 				}
 			}
 		} else if len(hostNamespaces) == 3 {
@@ -77,13 +75,12 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			serviceName := strings.Join(hostNamespaces, ".")
 			upstream := p.upstreamLoader.Get(serviceName)
 			if upstream != nil {
-				p.targetEntry = upstream.NextTargetEntry()
+				targetEntry = upstream.NextTargetEntry()
 			}
 		}
-
 	}
-	log.Debugf("targetEntry [%s] is found", p.targetEntry)
-	if p.targetEntry == nil {
+	log.Debugf("targetEntry [%s] is found", targetEntry)
+	if targetEntry == nil {
 		w.WriteHeader(http.StatusBadGateway)
 		return
 	}
@@ -96,7 +93,7 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var h http.Handler
 	switch {
 	case r.Header.Get("Upgrade") == "websocket":
-		h = newRawProxy(p.targetEntry)
+		h = newRawProxy(targetEntry)
 
 		// To use the filtered proxy use
 		// h = newWSProxy(t.URL)
@@ -104,10 +101,10 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.Header.Get("Accept") == "text/event-stream":
 		// use the flush interval for SSE (server-sent events)
 		// must be > 0s to be effective
-		h = newHTTPProxy(p.targetEntry, p.tr, p.cfg.FlushInterval)
+		h = newHTTPProxy(targetEntry, p.tr, p.cfg.FlushInterval)
 
 	default:
-		h = newHTTPProxy(p.targetEntry, p.tr, time.Duration(0))
+		h = newHTTPProxy(targetEntry, p.tr, time.Duration(0))
 	}
 
 	//start := time.Now()
