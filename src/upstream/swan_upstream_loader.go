@@ -101,7 +101,7 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Poll() {
 				swanUpstreamLoader.Upstreams = append(swanUpstreamLoader.Upstreams, upstream)
 				log.Debugf("Upstream [%s] created", upstream.ServiceName)
 			}
-		case "delete":
+		case "del":
 			upstream := buildSwanUpstream(targetChangeEvent, swanUpstreamLoader.DefaultUpstreamIp, swanUpstreamLoader.Port, swanUpstreamLoader.Proto)
 			target := buildSwanTarget(targetChangeEvent)
 			for _, u := range swanUpstreamLoader.Upstreams {

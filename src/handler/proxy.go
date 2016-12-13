@@ -40,7 +40,6 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		targetEntry = p.upstream.NextTargetEntry()
 	case config.SINGLE_LISTENER_MODE:
 		hostname := r.Header.Get("Host")
-		hostname = "http://nginx0051-01.defaultGroup.dataman-mesos.dataman-inc.com:80"
 		if hostname == "" {
 			log.Debug("hostname is null")
 			w.WriteHeader(http.StatusBadGateway)
