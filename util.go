@@ -1,13 +1,21 @@
-package handler
+package main
 
 import (
 	"errors"
 	"net"
 	"net/http"
 	"strings"
-
-	"github.com/Dataman-Cloud/swan-janitor/src/config"
 )
+
+func SliceContains(slice []string, item string) bool {
+	set := make(map[string]struct{}, len(slice))
+	for _, s := range slice {
+		set[s] = struct{}{}
+	}
+
+	_, ok := set[item]
+	return ok
+}
 
 // addHeaders adds/updates headers in request
 //
@@ -17,7 +25,7 @@ import (
 // * ClientIPHeader != "": Set header with that name to <remote ip>
 // * TLS connection: Set header with name from `cfg.TLSHeader` to `cfg.TLSHeaderValue`
 //
-func addHeaders(r *http.Request, cfg config.Proxy) error {
+func addHeaders(r *http.Request, cfg ProxyCfg) error {
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return errors.New("cannot parse " + r.RemoteAddr)

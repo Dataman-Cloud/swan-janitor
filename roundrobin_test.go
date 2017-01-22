@@ -1,4 +1,4 @@
-package loadbalance
+package main
 
 import (
 	"github.com/Dataman-Cloud/swan-janitor/src/upstream"

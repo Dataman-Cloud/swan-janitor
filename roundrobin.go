@@ -1,4 +1,4 @@
-package loadbalance
+package main
 
 import (
 	"sync"
