@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -75,7 +74,6 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	wildcardDomain := host[0 : domainIndex-1]
 	slices := strings.Split(wildcardDomain, ".")
-	fmt.Println(len(slices))
 	if !(len(slices) == 3 || len(slices) == 4) {
 		log.Debugf("slices is %s, header host is %s doesn't match [0\\.]app.user.cluster.domain.com abort", slices, host)
 		w.WriteHeader(http.StatusBadRequest)
@@ -85,8 +83,6 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(slices) == 4 {
 		taskID := strings.Join(slices, "-")
 		appID := strings.Join(slices[1:], "-")
-		fmt.Println(taskID)
-		fmt.Println(appID)
 		upstream := p.swanUpstreamLoader.Get(appID)
 		if upstream == nil {
 			log.Debugf("fail to found any upstream for %s", host)
@@ -106,7 +102,6 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if len(slices) == 3 {
 		appID := strings.Join(slices, "-")
-		fmt.Println(appID)
 		upstream := p.swanUpstreamLoader.Get(appID)
 		if upstream == nil {
 			log.Debugf("fail to found any upstream for %s", host)
