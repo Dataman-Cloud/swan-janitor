@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	janitor "github.com/Dataman-Cloud/swan-janitor/src"
 	log "github.com/Sirupsen/logrus"
 )
 
@@ -19,14 +20,14 @@ func SetupLogger() {
 }
 
 func main() {
-	janitorConfig := DefaultConfig()
+	janitorConfig := janitor.DefaultConfig()
 	//enable multi_port mode
 	//janitorConfig.Listener.Mode = config.MULTIPORT_LISTENER_MODE
 
 	//TuneGolangProcess()
 	SetupLogger()
 
-	server := NewJanitorServer(janitorConfig)
+	server := janitor.NewJanitorServer(janitorConfig)
 	go server.ServerInit().Run()
 
 	ticker := time.NewTicker(time.Second * 10)
@@ -34,10 +35,9 @@ func main() {
 		<-ticker.C
 		log.Debug("sending targetChangeEvent")
 		time.Sleep(time.Second * 10)
-		targetChangeEvents := []*TargetChangeEvent{
+		targetChangeEvents := []*janitor.TargetChangeEvent{
 			{
 				Change:   "add",
-				App:      "nginx0051",
 				AppID:    "nginx0051-xcm-datamanmesos",
 				TaskID:   "0-nginx0051-xcm-datamanmesos",
 				TaskIp:   "192.168.1.162",
@@ -46,7 +46,6 @@ func main() {
 			},
 			{
 				Change:   "add",
-				App:      "nginx0051",
 				AppID:    "nginx0051-xcm-datamanmesos",
 				TaskID:   "1-nginx0051-xcm-datamanmesos",
 				TaskIp:   "192.168.1.162",
@@ -59,10 +58,9 @@ func main() {
 			server.SwanEventChan() <- targetChangeEvent
 		}
 		time.Sleep(time.Second * 10)
-		targetChangeEvents = []*TargetChangeEvent{
+		targetChangeEvents = []*janitor.TargetChangeEvent{
 			{
 				Change:   "del",
-				App:      "nginx0051",
 				AppID:    "nginx0051-xcm-datamanmesos",
 				TaskID:   "0-nginx0051-xcm-datamanmesos",
 				TaskIp:   "192.168.1.162",
@@ -71,7 +69,6 @@ func main() {
 			},
 			{
 				Change:   "del",
-				App:      "nginx0051",
 				AppID:    "nginx0051-xcm-datamanmesos",
 				TaskID:   "1-nginx0051-xcm-datamanmesos",
 				TaskIp:   "192.168.1.162",
