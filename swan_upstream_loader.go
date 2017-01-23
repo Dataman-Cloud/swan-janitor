@@ -136,10 +136,9 @@ func (swanUpstreamLoader *SwanUpstreamLoader) Get(appID string) *Upstream {
 
 func buildTarget(targetChangeEvent *TargetChangeEvent) *Target {
 	return &Target{
-		App:      targetChangeEvent.App,
 		AppID:    targetChangeEvent.AppID,
 		TaskID:   targetChangeEvent.TaskID,
-		TaskIp:   targetChangeEvent.TaskIp,
+		TaskIP:   targetChangeEvent.TaskIp,
 		TaskPort: targetChangeEvent.TaskPort,
 		PortName: targetChangeEvent.PortName,
 	}
