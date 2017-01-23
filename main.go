@@ -2,12 +2,7 @@ package main
 
 import (
 	"os"
-
 	"time"
-
-	"github.com/Dataman-Cloud/swan-janitor/src/config"
-	"github.com/Dataman-Cloud/swan-janitor/src/janitor"
-	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -23,39 +18,40 @@ func SetupLogger() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func LoadConfig() config.Config {
-	return config.DefaultConfig()
-}
-
 func main() {
-	janitorConfig := LoadConfig()
+	janitorConfig := DefaultConfig()
 	//enable multi_port mode
 	//janitorConfig.Listener.Mode = config.MULTIPORT_LISTENER_MODE
 
 	//TuneGolangProcess()
 	SetupLogger()
 
-	server := janitor.NewJanitorServer(janitorConfig)
-	go server.Init().Run()
+	server := NewJanitorServer(janitorConfig)
+	go server.ServerInit().Run()
 
-	ticker := time.NewTicker(time.Second * 30)
+	ticker := time.NewTicker(time.Second * 10)
 	for {
 		<-ticker.C
 		log.Debug("sending targetChangeEvent")
-		targetChangeEvents := []*upstream.TargetChangeEvent{
+		time.Sleep(time.Second * 10)
+		targetChangeEvents := []*TargetChangeEvent{
 			{
-				Change:     "add",
-				TargetName: "0.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:   "192.168.1.162",
-				TargetPort: "80",
-				//FrontendPort: "8081", //for MULTIPORT_LISTENER_MODE
+				Change:   "add",
+				App:      "nginx0051",
+				AppID:    "nginx0051-xcm-datamanmesos",
+				TaskID:   "0-nginx0051-xcm-datamanmesos",
+				TaskIp:   "192.168.1.162",
+				PortName: "web",
+				TaskPort: 80,
 			},
 			{
-				Change:     "add",
-				TargetName: "1.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:   "192.168.1.163",
-				TargetPort: "80",
-				//FrontendPort: "8081", // for MULTIPORT_LISTENER_MODE
+				Change:   "add",
+				App:      "nginx0051",
+				AppID:    "nginx0051-xcm-datamanmesos",
+				TaskID:   "1-nginx0051-xcm-datamanmesos",
+				TaskIp:   "192.168.1.162",
+				PortName: "web1",
+				TaskPort: 80,
 			},
 		}
 
@@ -63,32 +59,28 @@ func main() {
 			server.SwanEventChan() <- targetChangeEvent
 		}
 		time.Sleep(time.Second * 10)
-		targetChangeEvents = []*upstream.TargetChangeEvent{
+		targetChangeEvents = []*TargetChangeEvent{
 			{
-				Change:     "delete",
-				TargetName: "0.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:   "192.168.1.162",
-				TargetPort: "80",
-				//FrontendPort: "8081",
+				Change:   "del",
+				App:      "nginx0051",
+				AppID:    "nginx0051-xcm-datamanmesos",
+				TaskID:   "0-nginx0051-xcm-datamanmesos",
+				TaskIp:   "192.168.1.162",
+				PortName: "web",
+				TaskPort: 80,
 			},
 			{
-				Change:     "delete",
-				TargetName: "1.nginx0051-01.defaultGroup.dataman-mesos",
-				TargetIP:   "192.168.1.163",
-				TargetPort: "80",
-				//FrontendPort: "8081",
+				Change:   "del",
+				App:      "nginx0051",
+				AppID:    "nginx0051-xcm-datamanmesos",
+				TaskID:   "1-nginx0051-xcm-datamanmesos",
+				TaskIp:   "192.168.1.162",
+				PortName: "web1",
+				TaskPort: 80,
 			},
 		}
 		for _, targetChangeEvent := range targetChangeEvents {
 			server.SwanEventChan() <- targetChangeEvent
 		}
-		//targetChangeEvent := &upstream.TargetChangeEvent{
-		//	Change:       "delete",
-		//	TargetName:   "0.nginx0051-01.defaultGroup.dataman-mesos",
-		//	TargetIP:     "192.168.1.162",
-		//	TargetPort:   "80",
-		//	FrontendPort: "8081",
-		//}
-		//server.SwanEventChan() <- targetChangeEvent
 	}
 }

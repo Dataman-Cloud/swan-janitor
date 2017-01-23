@@ -1,11 +1,6 @@
-package janitor
+package main
 
 import (
-	"github.com/Dataman-Cloud/swan-janitor/src/config"
-	"github.com/Dataman-Cloud/swan-janitor/src/handler"
-	"github.com/Dataman-Cloud/swan-janitor/src/listener"
-	"github.com/Dataman-Cloud/swan-janitor/src/upstream"
-
 	"testing"
 
 	"github.com/stretchr/testify/assert"
