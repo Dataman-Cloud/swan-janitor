@@ -15,7 +15,6 @@ const (
 type TargetChangeEvent struct {
 	Change string // "add" or "del"
 
-	App      string
 	AppID    string
 	TaskID   string
 	TaskIp   string
