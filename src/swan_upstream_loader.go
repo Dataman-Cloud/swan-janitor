@@ -17,7 +17,7 @@ type TargetChangeEvent struct {
 
 	AppID    string
 	TaskID   string
-	TaskIp   string
+	TaskIP   string
 	TaskPort uint32
 	PortName string
 }
@@ -137,7 +137,7 @@ func buildTarget(targetChangeEvent *TargetChangeEvent) *Target {
 	return &Target{
 		AppID:    targetChangeEvent.AppID,
 		TaskID:   targetChangeEvent.TaskID,
-		TaskIP:   targetChangeEvent.TaskIp,
+		TaskIP:   targetChangeEvent.TaskIP,
 		TaskPort: targetChangeEvent.TaskPort,
 		PortName: targetChangeEvent.PortName,
 	}
