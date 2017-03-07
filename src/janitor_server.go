@@ -28,7 +28,7 @@ func NewJanitorServer(Config Config) *JanitorServer {
 }
 
 func (server *JanitorServer) Init() error {
-	log.Info("Janitor Server Initialing")
+	log.Info("Janitor Server Init")
 	var err error
 	server.swanUpstreamLoader, err = SwanUpstreamLoaderInit()
 	if err != nil {
