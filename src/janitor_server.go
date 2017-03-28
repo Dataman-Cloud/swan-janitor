@@ -65,6 +65,6 @@ func (server *JanitorServer) SwanEventChan() chan<- *TargetChangeEvent {
 	return server.swanUpstreamLoader.SwanEventChan()
 }
 
-func (server *JanitorServer) Run() {
-	server.HttpServer.Serve(server.Listener)
+func (server *JanitorServer) Run() error {
+	return server.HttpServer.Serve(server.Listener)
 }
