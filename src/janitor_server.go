@@ -1,70 +1,45 @@
 package janitor
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/armon/go-proxyproto"
 	"golang.org/x/net/context"
 )
 
 type JanitorServer struct {
-	swanUpstreamLoader *SwanUpstreamLoader
-	HttpServer         *http.Server
-	Listener           *proxyproto.Listener
-
-	ctx    context.Context
 	config Config
+
+	UpstreamLoader *UpstreamLoader
+	EventChan      chan *TargetChangeEvent
+
+	httpServer *http.Server
 }
 
 func NewJanitorServer(Config Config) *JanitorServer {
 	server := &JanitorServer{
 		config: Config,
-		ctx:    context.Background(),
 	}
+
+	server.EventChan = make(chan *TargetChangeEvent, 1024)
+	server.UpstreamLoader = NewUpstreamLoader(server.EventChan)
+
+	server.httpServer = &http.Server{Handler: NewHTTPProxy(&http.Transport{},
+		server.config.HttpHandler,
+		server.config.ListenAddr,
+		server.UpstreamLoader)}
+
 	return server
 }
 
-func (server *JanitorServer) Init() error {
-	log.Info("Janitor Server Init")
-	var err error
-	server.swanUpstreamLoader, err = SwanUpstreamLoaderInit()
-	if err != nil {
-		log.Fatalf("Setup Upstream Loader Got err: %s", err)
-	}
-
+func (server *JanitorServer) Start(ctx context.Context) error {
 	ln, err := net.Listen("tcp", server.config.ListenAddr)
 	if err != nil {
-		log.Errorf("%s", err)
 		return err
 	}
 
-	server.Listener = &proxyproto.Listener{Listener: TcpKeepAliveListener{ln.(*net.TCPListener)}}
-	if server.Listener == nil {
-		return fmt.Errorf("failed to listen port")
-	}
-	server.HttpServer = &http.Server{Handler: NewHTTPProxy(&http.Transport{},
-		server.config.HttpHandler,
-		server.config.ListenAddr,
-		server.swanUpstreamLoader)}
+	go server.UpstreamLoader.Start(ctx)
 
-	if server.HttpServer == nil {
-		return fmt.Errorf("server.HttpServer not initialized")
-	}
-
-	return nil
-}
-
-func (server *JanitorServer) UpstreamLoader() *SwanUpstreamLoader {
-	return server.swanUpstreamLoader
-}
-
-func (server *JanitorServer) SwanEventChan() chan<- *TargetChangeEvent {
-	return server.swanUpstreamLoader.SwanEventChan()
-}
-
-func (server *JanitorServer) Run() error {
-	return server.HttpServer.Serve(server.Listener)
+	return server.httpServer.Serve(&proxyproto.Listener{Listener: TcpKeepAliveListener{ln.(*net.TCPListener)}})
 }
