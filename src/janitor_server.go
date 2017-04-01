@@ -33,13 +33,25 @@ func NewJanitorServer(Config Config) *JanitorServer {
 	return server
 }
 
-func (server *JanitorServer) Start(ctx context.Context) error {
+func (server *JanitorServer) Start(ctx context.Context, started chan bool) error {
 	ln, err := net.Listen("tcp", server.config.ListenAddr)
 	if err != nil {
+		close(started)
 		return err
 	}
 
-	go server.UpstreamLoader.Start(ctx)
+	errCh := make(chan error)
+	go func() {
+		errCh <- server.UpstreamLoader.Start(ctx)
+	}()
 
-	return server.httpServer.Serve(&proxyproto.Listener{Listener: TcpKeepAliveListener{ln.(*net.TCPListener)}})
+	go func() {
+		errCh <- server.httpServer.Serve(&proxyproto.Listener{Listener: TcpKeepAliveListener{ln.(*net.TCPListener)}})
+	}()
+
+	go func() {
+		started <- true
+	}()
+
+	return <-errCh
 }

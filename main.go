@@ -27,7 +27,8 @@ func main() {
 	server := janitor.NewJanitorServer(janitorConfig)
 
 	go func() {
-		err := server.Start(context.Background())
+		staredCh := make(chan bool)
+		err := server.Start(context.Background(), staredCh)
 		if err != nil {
 			log.Errorf("server start go error: %v", err)
 			os.Exit(1)
