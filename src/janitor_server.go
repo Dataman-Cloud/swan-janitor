@@ -36,7 +36,6 @@ func NewJanitorServer(Config Config) *JanitorServer {
 func (server *JanitorServer) Start(ctx context.Context, started chan bool) error {
 	ln, err := net.Listen("tcp", server.config.ListenAddr)
 	if err != nil {
-		close(started)
 		return err
 	}
 
