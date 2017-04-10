@@ -26,7 +26,7 @@ func (t *Target) Equal(t1 *Target) bool {
 }
 
 func (t *Target) ToString() string {
-	return fmt.Sprintf("%s %s %s %s %s %s\n", t.AppID, t.TaskID, t.TaskIP, t.TaskPort, t.PortName)
+	return fmt.Sprintf("%s %s %s %d %s\n", t.AppID, t.TaskID, t.TaskIP, t.TaskPort, t.PortName)
 }
 
 func (t Target) Entry() *url.URL {

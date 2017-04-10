@@ -8,18 +8,15 @@ import (
 type Upstream struct {
 	AppID string
 
-	Targets     []*Target
-	LoadBalance *RoundRobinLoadBalancer
+	Targets      []*Target
+	loadBalancer LoadBalancer
 
 	mu sync.RWMutex
 }
 
 func NewUpstream() *Upstream {
-	lb := NewRoundRobinLoadBalancer()
-	lb.Seed()
-
 	return &Upstream{
-		LoadBalance: lb,
+		loadBalancer: NewRoundRobinLoadBalancer(),
 	}
 }
 
@@ -55,14 +52,7 @@ func (u *Upstream) RemoveTarget(target *Target) {
 }
 
 func (u *Upstream) NextTargetEntry() *url.URL {
-	u.mu.RLock()
-	defer u.mu.RUnlock()
-
-	rr := u.LoadBalance
-	current := u.Targets[rr.NextIndex]
-	rr.NextIndex = (rr.NextIndex + 1) % len(u.Targets)
-
-	return current.Entry()
+	return u.loadBalancer.Seed(u.Targets).Entry()
 }
 
 func (u *Upstream) GetTarget(taskID string) *Target {
