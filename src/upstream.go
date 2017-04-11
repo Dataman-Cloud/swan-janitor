@@ -6,9 +6,9 @@ import (
 )
 
 type Upstream struct {
-	AppID string
+	AppID string `json:"appID"`
 
-	Targets      []*Target
+	Targets      []*Target `json:"targets"`
 	loadBalancer LoadBalancer
 
 	mu sync.RWMutex
