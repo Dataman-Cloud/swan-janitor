@@ -30,11 +30,8 @@ func NewJanitorServer(Config Config) *JanitorServer {
 		s.config,
 		s.UpstreamLoader)}
 
-	if Config.LogLevel >= 0 {
-		logrus.SetLevel(Config.LogLevel)
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
-	}
+	level, _ := logrus.ParseLevel(Config.LogLevel)
+	logrus.SetLevel(level)
 
 	return s
 }
