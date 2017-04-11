@@ -16,7 +16,7 @@ type Upstream struct {
 
 func NewUpstream() *Upstream {
 	return &Upstream{
-		loadBalancer: NewRoundRobinLoadBalancer(),
+		loadBalancer: NewWeightLoadBalancer(),
 	}
 }
 
@@ -33,6 +33,13 @@ func (u *Upstream) AddTarget(target *Target) {
 	defer u.mu.Unlock()
 
 	u.Targets = append(u.Targets, target)
+}
+
+func (u *Upstream) UpdateTargetWeight(taskID string, newWeight float64) {
+	target := u.GetTarget(taskID)
+	if target != nil {
+		target.Weight = newWeight
+	}
 }
 
 func (u *Upstream) RemoveTarget(target *Target) {
