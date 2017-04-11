@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/armon/go-proxyproto"
 	"golang.org/x/net/context"
 )
@@ -28,6 +29,12 @@ func NewJanitorServer(Config Config) *JanitorServer {
 	s.httpServer = &http.Server{Handler: NewLayer7Proxy(&http.Transport{},
 		s.config,
 		s.UpstreamLoader)}
+
+	if Config.LogLevel >= 0 {
+		logrus.SetLevel(Config.LogLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
+	}
 
 	return s
 }
