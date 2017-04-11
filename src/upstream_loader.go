@@ -48,7 +48,7 @@ func (loader *UpstreamLoader) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case targetChangeEvent := <-loader.eventChan:
-			log.Debugf("upstreamLoader receive app event:%s", targetChangeEvent)
+			log.Debugf("upstreamLoader receive app event: %+v", targetChangeEvent)
 
 			upstream := upstreamFromChangeEvent(targetChangeEvent)
 			target := targetFromChangeEvent(targetChangeEvent)
