@@ -34,23 +34,23 @@ func (m *meteredRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 }
 
 // httpProxy is a dynamic reverse proxy for HTTP and HTTPS protocols.
-type httpProxy struct {
+type layer7Proxy struct {
 	tr             http.RoundTripper
-	handlerCfg     HttpHandlerCfg
-	listenAddr     string
+	config         Config
 	UpstreamLoader *UpstreamLoader
 }
 
-func NewHTTPProxy(tr http.RoundTripper, handlerCfg HttpHandlerCfg, listenAddr string, UpstreamLoader *UpstreamLoader) http.Handler {
-	return &httpProxy{
+func NewLayer7Proxy(tr http.RoundTripper,
+	Config Config,
+	UpstreamLoader *UpstreamLoader) http.Handler {
+	return &layer7Proxy{
 		tr:             tr,
-		listenAddr:     listenAddr,
-		handlerCfg:     handlerCfg,
+		config:         Config,
 		UpstreamLoader: UpstreamLoader,
 	}
 }
 
-func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *layer7Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("got request for hostname: %s", r.Host)
 
 	var targetEntry *url.URL
@@ -63,13 +63,13 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := strings.Split(r.Host, ":")[0]
 	log.Debugf("host [%s] is requested", host)
 
-	if !strings.HasSuffix(host, p.handlerCfg.Domain) {
-		log.Debugf("header host doesn't end with %s, abort", p.handlerCfg.Domain)
+	if !strings.HasSuffix(host, p.config.Domain) {
+		log.Debugf("header host doesn't end with %s, abort", p.config.Domain)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	domainIndex := strings.Index(host, RESERVED_API_GATEWAY_DOMAIN+"."+p.handlerCfg.Domain)
+	domainIndex := strings.Index(host, RESERVED_API_GATEWAY_DOMAIN+"."+p.config.Domain)
 	if domainIndex == 0 {
 		log.Debugf("header host is %s doesn't match [0\\.]app.user.cluster.domain.com abort", host)
 		w.WriteHeader(http.StatusBadRequest)
@@ -138,7 +138,7 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.Header.Get("Accept") == "text/event-stream":
 		// use the flush interval for SSE (server-sent events)
 		// must be > 0s to be effective
-		h = newHTTPProxy(targetEntry, p.tr, p.handlerCfg.FlushInterval)
+		h = newHTTPProxy(targetEntry, p.tr, p.config.FlushInterval)
 
 	default:
 		h = newHTTPProxy(targetEntry, p.tr, time.Duration(0))
@@ -148,7 +148,7 @@ func (p *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
 }
 
-func (proxy *httpProxy) AddHeaders(r *http.Request) error {
+func (proxy *layer7Proxy) AddHeaders(r *http.Request) error {
 	remoteIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return errors.New("cannot parse " + r.RemoteAddr)
@@ -206,7 +206,7 @@ func (proxy *httpProxy) AddHeaders(r *http.Request) error {
 			fwd += "; proto=http"
 		}
 	}
-	ip, _, err := net.SplitHostPort(proxy.listenAddr)
+	ip, _, err := net.SplitHostPort(proxy.config.ListenAddr)
 	if err == nil && ip != "" {
 		fwd += "; by=" + ip
 	}
