@@ -1,7 +1,6 @@
 package janitor
 
 import (
-	"net/url"
 	"sync"
 )
 
@@ -58,8 +57,8 @@ func (u *Upstream) RemoveTarget(target *Target) {
 	}
 }
 
-func (u *Upstream) NextTargetEntry() *url.URL {
-	return u.loadBalancer.Seed(u.Targets).Entry()
+func (u *Upstream) NextTargetEntry() *Target {
+	return u.loadBalancer.Seed(u.Targets)
 }
 
 func (u *Upstream) GetTarget(taskID string) *Target {
