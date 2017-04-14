@@ -79,12 +79,13 @@ func NewLayer7Proxy(tr http.RoundTripper,
 func (p *layer7Proxy) FailByGateway(w http.ResponseWriter, r *http.Request, httpCode int, reason string) {
 	log.Debugf(reason)
 	p.P.RequestCounter.With(prometheus.Labels{
-		"source":    "GATEWAT",
+		"source":    "GATEWAY",
 		"code":      fmt.Sprintf("%d", httpCode),
 		"method":    r.Method,
 		"path":      r.URL.RawPath,
 		"slotindex": "-1",
 		"reason":    reason,
+		"taskId":    "",
 	}).Inc()
 }
 
