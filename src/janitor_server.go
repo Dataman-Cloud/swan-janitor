@@ -29,6 +29,11 @@ func NewJanitorServer(Config Config) *JanitorServer {
 	s.EventChan = make(chan *TargetChangeEvent, 1024)
 	s.UpstreamLoader = NewUpstreamLoader(s.EventChan)
 
+	s.P = &Prometheus{
+		MetricsPath: "/gateway-metrics",
+	}
+	s.P.registerMetrics(fmt.Sprintf("gateway_%s", strings.Replace(strings.Replace(Config.ListenAddr, ".", "_", -1), ":", "_", -1)))
+
 	s.httpServer = &http.Server{Handler: NewLayer7Proxy(&http.Transport{},
 		s.config,
 		s.UpstreamLoader,
@@ -37,11 +42,6 @@ func NewJanitorServer(Config Config) *JanitorServer {
 
 	level, _ := logrus.ParseLevel(Config.LogLevel)
 	logrus.SetLevel(level)
-
-	s.P = &Prometheus{
-		MetricsPath: "/gateway-metrics",
-	}
-	s.P.registerMetrics(fmt.Sprintf("gateway_%s", strings.Replace(strings.Replace(Config.ListenAddr, ".", "_", -1), ":", "_", -1)))
 
 	return s
 }
