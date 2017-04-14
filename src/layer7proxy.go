@@ -3,10 +3,12 @@ package janitor
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,9 +42,24 @@ func (m *meteredRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 	backendBegin := time.Now()
 	resp, err := m.tr.RoundTrip(r)
 
+	if r.Header.Get("X-Forwarded-Proto") == "http" {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		err = resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		resp.ContentLength = int64(len(b))
+		resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+
+		m.P.ResponseSize.Observe(float64(resp.ContentLength))
+	}
+
 	m.P.BackendDuration.Observe(time.Now().Sub(backendBegin).Seconds())
-	m.P.ResponseSize.Observe(float64(resp.ContentLength))
-	m.P.RequestSize.Observe(float64(r.ContentLength))
 
 	m.P.RequestCounter.With(prometheus.Labels{
 		"source": "UserApp",
