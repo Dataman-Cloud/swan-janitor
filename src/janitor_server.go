@@ -1,6 +1,7 @@
 package janitor
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 
@@ -16,6 +17,7 @@ type JanitorServer struct {
 	EventChan      chan *TargetChangeEvent
 
 	httpServer *http.Server
+	P          *Prometheus
 }
 
 func NewJanitorServer(Config Config) *JanitorServer {
@@ -28,10 +30,17 @@ func NewJanitorServer(Config Config) *JanitorServer {
 
 	s.httpServer = &http.Server{Handler: NewLayer7Proxy(&http.Transport{},
 		s.config,
-		s.UpstreamLoader)}
+		s.UpstreamLoader,
+		s.P,
+	)}
 
 	level, _ := logrus.ParseLevel(Config.LogLevel)
 	logrus.SetLevel(level)
+
+	s.P = &Prometheus{
+		MetricsPath: "/gateway-metrics",
+	}
+	s.P.registerMetrics(fmt.Sprintf("gateway-%s", Config.ListenAddr))
 
 	return s
 }
