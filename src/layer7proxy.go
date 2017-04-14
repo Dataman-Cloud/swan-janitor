@@ -50,6 +50,7 @@ func (m *meteredRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 		"method": r.Method,
 		"path":   r.URL.RawPath,
 		"taskId": m.taskId,
+		"reason": "nomral",
 	}).Inc()
 	return resp, err
 }
