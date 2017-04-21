@@ -41,6 +41,9 @@ type meteredRoundTripper struct {
 func (m *meteredRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	backendBegin := time.Now()
 	resp, err := m.tr.RoundTrip(r)
+	if err != nil {
+		return resp, err
+	}
 
 	if r.Header.Get("X-Forwarded-Proto") == "http" {
 		b, err := ioutil.ReadAll(resp.Body)
@@ -123,7 +126,7 @@ func (p *layer7Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	domainIndex := strings.Index(host, RESERVED_API_GATEWAY_DOMAIN+"."+p.config.Domain)
-	if domainIndex == 0 {
+	if domainIndex <= 0 {
 		p.FailByGateway(w, r, http.StatusBadRequest, fmt.Sprintf("header host is %s doesn't match [0\\.]app.user.cluster.domain.com abort", host))
 		return
 	}
