@@ -1,6 +1,7 @@
 package janitor
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +46,7 @@ func (m *meteredRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 		return resp, err
 	}
 
-	if r.Header.Get("X-Forwarded-Proto") == "http" {
+	if r.Header.Get("X-Forwarded-Proto") == "http" && false {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
@@ -56,6 +56,8 @@ func (m *meteredRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 		if err != nil {
 			return nil, err
 		}
+		body := ioutil.NopCloser(bytes.NewReader(b))
+		resp.Body = body
 
 		resp.ContentLength = int64(len(b))
 		resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
@@ -133,29 +135,33 @@ func (p *layer7Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wildcardDomain := host[0 : domainIndex-1]
-	slices := strings.SplitN(wildcardDomain, ".", 2)
-	if len(slices) != 2 {
-		p.FailByGateway(w, r, http.StatusBadRequest, fmt.Sprintf("header host is %s doesn't match [0\\.]app.user.cluster.domain.com abort", host))
+	slices := strings.Split(wildcardDomain, ".")
+	if !(len(slices) == 3 || len(slices) == 4) {
+		p.FailByGateway(w, r, http.StatusBadRequest, fmt.Sprintf("slices is %s, header host is %s doesn't match [0\\.]app.user.cluster.domain.com abort", slices, host))
 		return
 	}
 
-	digitRegexp := regexp.MustCompile("[0-9]+")
-	if digitRegexp.MatchString(slices[0]) {
-		upstream := p.UpstreamLoader.Get(slices[1])
+	if len(slices) == 4 {
+		taskID := strings.Join(slices, "-")
+		appID := strings.Join(slices[1:], "-")
+		upstream := p.UpstreamLoader.Get(appID)
 		if upstream == nil {
 			p.FailByGateway(w, r, http.StatusNotFound, fmt.Sprintf("fail to found any upstream for %s", host))
 			return
 		}
 
-		target := upstream.GetTarget(wildcardDomain)
+		target := upstream.GetTarget(taskID)
 		if target == nil {
 			p.FailByGateway(w, r, http.StatusNotFound, fmt.Sprintf("fail to found any target for %s", host))
 			return
 		}
 
 		selectedTarget = target
-	} else {
-		upstream := p.UpstreamLoader.Get(wildcardDomain)
+	}
+
+	if len(slices) == 3 {
+		appID := strings.Join(slices, "-")
+		upstream := p.UpstreamLoader.Get(appID)
 		if upstream == nil {
 			p.FailByGateway(w, r, http.StatusNotFound, fmt.Sprintf("fail to found any upstream for %s", host))
 			return
