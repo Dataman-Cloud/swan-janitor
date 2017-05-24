@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
